@@ -12,7 +12,7 @@ Use system serif display typography paired with a readable system sans stack so 
 
 ## Skills and guidance
 
-No additional Codex skill was installed for this repository. The session exposes the built-in `imagegen` skill (`C:/Users/user/.codex/skills/.system/imagegen/SKILL.md`), which can be used for newly generated visual assets when the task calls for them. The official OpenAI [`frontend-design` skill](https://github.com/openai/skills) was confirmed in the OpenAI skills catalog; it is not enabled in this session. Its documented installer requires network access and writes under the Codex skills directory, which is outside this workspace's write access. No third-party skill was installed. This document provides equivalent project guidance: choose a clear visual direction first, use a small token set, build the actual accessible screen, and inspect it at mobile and desktop widths.
+No additional Codex skill was installed for this repository. The session exposes the built-in `imagegen` skill (`C:/Users/user/.codex/skills/.system/imagegen/SKILL.md`), which can be used for newly generated visual assets when the task calls for them. I checked the official OpenAI skills repository on 2026-10-18: its curated catalog does not contain a general `frontend-design` skill, and the expected path returned HTTP 404. The documented installer also requires network access and writes under `C:/Users/user/.codex/skills`, outside this workspace's writable roots; installation cannot be performed here. No third-party skill was installed. This document provides equivalent project guidance: choose a clear visual direction first, use a small token set, build the actual accessible screen, and inspect it at mobile and desktop widths.
 
 ## Review checklist
 

@@ -10,9 +10,9 @@ from fastapi.responses import JSONResponse
 from analysis_api.schemas import (
     ErrorResponse,
     HealthResponse,
+    SummaryStatistics,
     SyntheticSummaryRequest,
     SyntheticSummaryResponse,
-    SummaryStatistics,
 )
 from analysis_api.security import require_analysis_token
 from analysis_engine import summarize_student_wellbeing

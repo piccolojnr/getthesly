@@ -26,7 +26,7 @@ The landing form is a local preview and clearly reports that AI interpretation i
 
 ```powershell
 Set-Location apps/web
-php artisan test
+composer test
 vendor/bin/pint --test
 npm run build
 
@@ -36,4 +36,4 @@ ruff check .
 ruff format --check .
 ```
 
-CI runs Laravel tests, Pint, frontend builds, Python lint/tests, and a service-to-service contract smoke check. See [deployment guidance](docs/DEPLOYMENT.md) before configuring hosted environments.
+CI runs PHPUnit, Pint, frontend builds, Python lint/tests, and a service-to-service contract smoke check. See [deployment guidance](docs/DEPLOYMENT.md) before configuring hosted environments.

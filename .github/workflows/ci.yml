@@ -28,7 +28,7 @@ jobs:
       - name: Prepare application key
         run: cp .env.example .env && php artisan key:generate
       - name: Run Laravel tests
-        run: php artisan test
+        run: vendor/bin/phpunit
       - name: Check PHP formatting
         run: vendor/bin/pint --test
       - name: Install frontend dependencies
@@ -97,4 +97,4 @@ jobs:
         env:
           ANALYSIS_SERVICE_URL: http://127.0.0.1:8000
           ANALYSIS_SERVICE_TOKEN: local-ci-shared-token
-        run: php artisan test tests/Contract/AnalysisServiceLiveContractTest.php
+        run: vendor/bin/phpunit tests/Contract/AnalysisServiceLiveContractTest.php

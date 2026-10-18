@@ -16,7 +16,7 @@ Use PSR-12 PHP formatting; run `vendor/bin/pint --test` in `apps/web`. Name PHP 
 
 ## Tests and Contracts
 
-Add Laravel feature tests under `apps/web/tests/Feature` and unit tests under `apps/web/tests/Unit`; run `php artisan test`. Python tests live under `services/analysis/tests` and run with `pytest`. Changes to request/response behavior must update `contracts/analysis-v1.openapi.yaml` and the matching tests. Do not claim a check passed unless it ran successfully.
+Add Laravel feature tests under `apps/web/tests/Feature` and unit tests under `apps/web/tests/Unit`; run `composer test` (or `vendor/bin/phpunit`). Python tests live under `services/analysis/tests` and run with `python -m pytest`. Changes to request/response behavior must update `contracts/analysis-v1.openapi.yaml` and the matching tests. Do not claim a check passed unless it ran successfully.
 
 ## Commits and Pull Requests
 
