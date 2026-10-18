@@ -14,59 +14,14 @@ final class LandingPageTest extends TestCase
             ->assertOk()
             ->assertSee('Make sense of')
             ->assertSee('What are you studying?')
-            ->assertSee('AI research understanding is not connected');
+            ->assertSee('Understand my research');
     }
 
     public function test_form_requires_a_research_title_and_question(): void
     {
         Livewire::test(ResearchDescriptionForm::class)
-            ->call('submit')
+            ->call('understand')
             ->assertHasErrors(['projectTitle' => 'required', 'researchQuestion' => 'required']);
-    }
-
-    public function test_valid_submission_shows_preview_message_without_saving_data(): void
-    {
-        Livewire::test(ResearchDescriptionForm::class)
-            ->set('projectTitle', 'Study habits and wellbeing')
-            ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
-            ->call('submit')
-            ->assertHasNoErrors()
-            ->assertSet('previewSubmitted', true);
-    }
-
-    public function test_editing_the_project_title_clears_the_previous_success_state(): void
-    {
-        Livewire::test(ResearchDescriptionForm::class)
-            ->set('projectTitle', 'Study habits and wellbeing')
-            ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
-            ->call('submit')
-            ->assertSet('previewSubmitted', true)
-            ->set('projectTitle', 'A revised title')
-            ->assertSet('previewSubmitted', false);
-    }
-
-    public function test_editing_the_research_question_clears_the_previous_success_state(): void
-    {
-        Livewire::test(ResearchDescriptionForm::class)
-            ->set('projectTitle', 'Study habits and wellbeing')
-            ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
-            ->call('submit')
-            ->assertSet('previewSubmitted', true)
-            ->set('researchQuestion', 'How does sleep relate to student wellbeing?')
-            ->assertSet('previewSubmitted', false);
-    }
-
-    public function test_invalid_resubmission_clears_the_previous_success_state(): void
-    {
-        Livewire::test(ResearchDescriptionForm::class)
-            ->set('projectTitle', 'Study habits and wellbeing')
-            ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
-            ->call('submit')
-            ->assertSet('previewSubmitted', true)
-            ->set('researchQuestion', 'Too short')
-            ->call('submit')
-            ->assertHasErrors(['researchQuestion' => 'min'])
-            ->assertSet('previewSubmitted', false);
     }
 
     public function test_application_health_endpoint_is_available(): void

@@ -1,6 +1,6 @@
 # getthesly
 
-An early foundation for a student-friendly statistical analysis product. Milestone 1 includes a polished research-description screen, a protected versioned FastAPI smoke-analysis endpoint, and the boundaries for future analysis work. Research interpretation and dataset upload are not connected yet.
+An early foundation for a student-friendly statistical analysis product. The current workflow lets a student describe their study, review a plain-English AI interpretation, and confirm it. Dataset uploads and statistical analysis are not available yet.
 
 ## Repository
 
@@ -16,11 +16,11 @@ PHP 8.3+, Composer 2, Node 20+, Python 3.11+, uv 0.13+, PostgreSQL 15+.
 ## Run locally
 
 1. In `apps/web`, run `composer install`, `npm ci`, and copy `.env.example` to `.env` (`cp .env.example .env`, or `Copy-Item .env.example .env` in PowerShell).
-2. Create a local PostgreSQL database with `createdb getthesly`. Copy `.env.example` to `.env`, set `DB_*` for PostgreSQL, and use the same strong `ANALYSIS_SERVICE_TOKEN` in both services. Set `ANALYSIS_SERVICE_URL=http://127.0.0.1:8100` in the web environment.
+2. Create a local PostgreSQL database with `createdb getthesly`. Configure `DB_*`, `SESSION_DRIVER=database`, and `OPENAI_API_KEY` in `.env`. Set the provider and model with `RESEARCH_AI_PROVIDER` and `RESEARCH_AI_MODEL` if needed. The default provider is OpenAI; interpretation runs only on the server.
 3. Run `php artisan key:generate`, `php artisan migrate`, and `php artisan serve` in `apps/web`. In a second terminal, run `npm run dev` there.
 4. Install [uv](https://docs.astral.sh/uv/) if it is not available. In `services/analysis`, run `uv sync --locked --extra dev`. Copy `.env.example` to `.env` and set the same token as Laravel. Start the service with `uv run --locked uvicorn analysis_api.main:app --reload --port 8100`.
 
-The landing form is a local preview and clearly reports that AI interpretation is not connected. The API smoke endpoint accepts only its fixed synthetic dataset; it does not execute user-supplied code or analyze uploads.
+The web app uses database sessions and shared database cache so anonymous drafts can be recovered by the same browser session and AI calls are rate-limited across app instances. Student input is kept for up to 30 days after last activity. Set `RESEARCH_DRAFT_RETENTION_DAYS` and run Laravel's scheduler to clean up abandoned drafts. The FastAPI smoke endpoint remains an integration fixture; it does not accept user code or analyze uploads.
 
 ## Verify
 
