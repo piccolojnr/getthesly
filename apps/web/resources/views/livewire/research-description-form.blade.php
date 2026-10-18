@@ -70,8 +70,12 @@
             <p class="preview-notice" role="alert">{{ $errorMessage }}</p>
         @endif
         <div class="form-action review-actions">
-            <button class="primary-button" type="button" wire:click="confirm">That’s correct</button>
-            <button class="text-button" type="button" wire:click="editDescription">Edit description</button>
+            @if ($interpretation['clarification'] === null)
+                <button class="primary-button" type="button" wire:click="confirm">That’s correct</button>
+                <button class="text-button" type="button" wire:click="editDescription">Edit description</button>
+            @else
+                <button class="primary-button" type="button" wire:click="editDescription">Edit description</button>
+            @endif
         </div>
     </section>
 @else

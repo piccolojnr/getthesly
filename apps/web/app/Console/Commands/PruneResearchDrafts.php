@@ -14,7 +14,7 @@ final class PruneResearchDrafts extends Command
     public function handle(): int
     {
         $cutoff = now()->subDays(max(1, (int) config('research.draft_retention_days', 30)));
-        $drafts = ResearchDraft::query()->where('updated_at', '<', $cutoff);
+        $drafts = ResearchDraft::query()->where('last_active_at', '<', $cutoff);
         $count = $drafts->count();
 
         if (! $this->option('dry-run')) {

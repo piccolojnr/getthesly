@@ -8,6 +8,7 @@ use App\Models\ResearchDraft;
 use App\Services\Research\ResearchInterpretation;
 use App\Services\Research\ResearchInterpreter;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use RuntimeException;
@@ -84,6 +85,22 @@ final class ResearchUnderstandingTest extends TestCase
             ->assertDontSee('Here’s what I understand');
 
         $this->assertSame('failed', ResearchDraft::query()->firstOrFail()->currentRevision->status);
+    }
+
+    public function test_interpretation_with_a_clarification_cannot_be_confirmed(): void
+    {
+        $interpretation = $this->validInterpretation();
+        $interpretation['clarification'] = 'Which student group are you referring to?';
+        UnderstandResearch::fake([$interpretation]);
+
+        $this->startForm()
+            ->call('understand')
+            ->assertSee('Which student group are you referring to?')
+            ->assertDontSee('That’s correct')
+            ->call('confirm')
+            ->assertSee('Please edit your description to clarify this question before confirming.');
+
+        $this->assertSame('interpreted', ResearchDraft::query()->firstOrFail()->currentRevision->status);
     }
 
     public function test_provider_failure_shows_a_safe_retry_message_without_logging_the_research_text(): void
@@ -207,6 +224,48 @@ final class ResearchUnderstandingTest extends TestCase
         $component->call('understand')->assertSee('Please wait a few minutes before trying again.');
     }
 
+    public function test_ip_rate_limit_blocks_requests_even_with_a_fresh_session(): void
+    {
+        config(['research.rate_limit_ip_attempts' => 1]);
+        config(['research.rate_limit_decay_seconds' => 600]);
+        $ipKey = 'research-understanding:ip:'.hash('sha256', (string) request()->ip());
+        RateLimiter::hit($ipKey, 600);
+        session()->regenerate();
+
+        $interpreter = $this->mock(ResearchInterpreter::class);
+        $interpreter->shouldNotReceive('interpret');
+
+        $this->startForm()
+            ->call('understand')
+            ->assertSee('Please wait a few minutes before trying again.');
+    }
+
+    public function test_visiting_a_saved_draft_refreshes_its_retention_activity(): void
+    {
+        $token = Str::random(64);
+        $draft = ResearchDraft::query()->create([
+            'public_id' => (string) Str::uuid(),
+            'access_token_hash' => hash('sha256', $token),
+            'current_revision' => 1,
+            'last_active_at' => now()->subDays(29),
+        ]);
+        $draft->revisions()->create([
+            'revision' => 1,
+            'project_title' => 'An active study',
+            'research_question' => 'How does sleep duration relate to university grades?',
+            'status' => 'draft',
+        ]);
+        session()->put('research_draft_public_id', $draft->public_id);
+        session()->put('research_draft_access_token', $token);
+
+        Livewire::test(ResearchDescriptionForm::class)
+            ->assertSet('projectTitle', 'An active study');
+
+        $this->assertTrue($draft->fresh()->last_active_at->greaterThan(now()->subMinute()));
+        $this->artisan('research:drafts:prune')->assertSuccessful();
+        $this->assertDatabaseHas('research_drafts', ['id' => $draft->id]);
+    }
+
     public function test_draft_cleanup_removes_expired_drafts_and_their_revisions(): void
     {
         $draft = ResearchDraft::query()->create([
@@ -218,6 +277,7 @@ final class ResearchUnderstandingTest extends TestCase
         $draft->forceFill([
             'created_at' => now()->subDays(31),
             'updated_at' => now()->subDays(31),
+            'last_active_at' => now()->subDays(31),
         ])->saveQuietly();
         $draft->revisions()->create([
             'revision' => 1,

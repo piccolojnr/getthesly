@@ -12,7 +12,15 @@ final class ResearchDraft extends Model
         'public_id',
         'access_token_hash',
         'current_revision',
+        'last_active_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'last_active_at' => 'immutable_datetime',
+        ];
+    }
 
     public function revisions(): HasMany
     {

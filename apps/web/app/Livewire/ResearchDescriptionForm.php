@@ -51,15 +51,21 @@ final class ResearchDescriptionForm extends Component
         $this->validate();
 
         $draft = $this->draftForCurrentSession() ?? $this->createDraft();
-        $rateLimitKey = 'research-understanding:'.hash('sha256', request()->ip().'|'.session()->getId());
+        $rateLimitKeys = [
+            'research-understanding:ip:'.hash('sha256', (string) request()->ip()),
+            'research-understanding:session:'.hash('sha256', session()->getId()),
+        ];
 
-        if (RateLimiter::tooManyAttempts($rateLimitKey, (int) config('research.rate_limit_attempts', 5))) {
+        if (RateLimiter::tooManyAttempts($rateLimitKeys[0], (int) config('research.rate_limit_ip_attempts', 20))
+            || RateLimiter::tooManyAttempts($rateLimitKeys[1], (int) config('research.rate_limit_attempts', 5))) {
             $this->errorMessage = 'Please wait a few minutes before trying again.';
 
             return;
         }
 
-        RateLimiter::hit($rateLimitKey, (int) config('research.rate_limit_decay_seconds', 600));
+        foreach ($rateLimitKeys as $rateLimitKey) {
+            RateLimiter::hit($rateLimitKey, (int) config('research.rate_limit_decay_seconds', 600));
+        }
         $this->errorMessage = null;
         $this->appendRevision($draft, 'draft');
 
@@ -80,6 +86,12 @@ final class ResearchDescriptionForm extends Component
 
         if ($draft === null || $revision === null || $revision->status !== 'interpreted' || $revision->interpretation === null) {
             $this->errorMessage = 'Please review a current interpretation before confirming it.';
+
+            return;
+        }
+
+        if ($revision->interpretation['clarification'] !== null) {
+            $this->errorMessage = 'Please edit your description to clarify this question before confirming.';
 
             return;
         }
@@ -141,6 +153,7 @@ final class ResearchDescriptionForm extends Component
             'public_id' => (string) Str::uuid(),
             'access_token_hash' => hash('sha256', $token),
             'current_revision' => 0,
+            'last_active_at' => now(),
         ]);
 
         session()->put('research_draft_public_id', $draft->public_id);
@@ -158,10 +171,16 @@ final class ResearchDescriptionForm extends Component
             return null;
         }
 
-        return ResearchDraft::query()
+        $draft = ResearchDraft::query()
             ->where('public_id', $publicId)
             ->where('access_token_hash', hash('sha256', $token))
             ->first();
+
+        if ($draft !== null && ($draft->last_active_at === null || $draft->last_active_at->lt(now()->subMinute()))) {
+            $draft->forceFill(['last_active_at' => now()])->save();
+        }
+
+        return $draft;
     }
 
     private function currentRevision(): ?ResearchDraftRevision

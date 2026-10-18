@@ -13,6 +13,7 @@ return new class extends Migration
             $table->uuid('public_id')->unique();
             $table->char('access_token_hash', 64)->index();
             $table->unsignedInteger('current_revision')->default(0);
+            $table->timestampTz('last_active_at')->nullable()->index();
             $table->timestamps();
         });
 
