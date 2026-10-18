@@ -372,4 +372,3 @@ final class ResearchUnderstandingTest extends TestCase
         $this->assertDatabaseCount('research_draft_revisions', 0);
     }
 }
-
