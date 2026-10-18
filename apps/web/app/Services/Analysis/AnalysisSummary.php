@@ -27,7 +27,7 @@ final readonly class AnalysisSummary
 
         $summary = $payload['summary'] ?? null;
 
-        if (! is_array($summary)
+        if (!is_array($summary)
             || array_diff(array_keys($summary), ['sample_size', 'mean', 'median', 'sample_standard_deviation']) !== []
             || array_diff(['sample_size', 'mean', 'median', 'sample_standard_deviation'], array_keys($summary)) !== []
             || !is_string($payload['dataset_id'] ?? null)
