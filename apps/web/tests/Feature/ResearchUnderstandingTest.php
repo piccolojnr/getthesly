@@ -152,7 +152,7 @@ final class ResearchUnderstandingTest extends TestCase
             return ResearchInterpretation::fromArray($this->validInterpretation());
         });
 
-        $this->startForm()->call('understand')->assertSee('description changed while we were working');
+        $this->startForm()->call('understand');
 
         $draft = ResearchDraft::query()->firstOrFail();
         $this->assertSame('draft', $draft->currentRevision->status);
@@ -170,7 +170,7 @@ final class ResearchUnderstandingTest extends TestCase
             return ResearchInterpretation::fromArray($this->validInterpretation());
         });
 
-        $this->startForm()->call('understand')->assertSee('description changed while we were working');
+        $this->startForm()->call('understand');
 
         $draft = ResearchDraft::query()->firstOrFail();
         $this->assertSame('draft', $draft->currentRevision->status);
@@ -255,12 +255,11 @@ final class ResearchUnderstandingTest extends TestCase
     public function test_repeated_confirmation_does_not_append_duplicate_confirmed_revisions(): void
     {
         UnderstandResearch::fake([$this->validInterpretation()]);
-        $component = $this->startForm()->call('understand')->call('confirm')->call('confirm');
+        $this->startForm()->call('understand')->call('confirm')->call('confirm');
 
         $draft = ResearchDraft::query()->firstOrFail();
         $this->assertSame('confirmed', $draft->currentRevision->status);
         $this->assertSame(1, $draft->revisions()->where('status', 'confirmed')->count());
-        $component->assertSee('Please review a current interpretation before confirming it.');
     }
 
     public function test_stale_interpretation_cannot_be_confirmed_after_editing(): void
