@@ -6,9 +6,9 @@ This repository keeps the web application in `apps/web`, the Python analysis API
 
 ## Local Development
 
-Install PHP dependencies with `composer install` in `apps/web`, then frontend dependencies with `npm install` there. Copy `.env.example` to `.env`, set a PostgreSQL database and the shared `ANALYSIS_SERVICE_TOKEN`, run `php artisan key:generate` and `php artisan migrate`, then start the web server with `php artisan serve` and Vite with `npm run dev`.
+Install PHP dependencies with `composer install` in `apps/web`, then frontend dependencies with `npm ci` there. Copy `.env.example` to `.env`, set a PostgreSQL database and the shared `ANALYSIS_SERVICE_TOKEN`, run `php artisan key:generate` and `php artisan migrate`, then start the web server with `php artisan serve` and Vite with `npm run dev`.
 
-For Python, create a virtual environment in `services/analysis`, run `pip install -e '.[dev]'`, then start `uvicorn analysis_api.main:app --reload --port 8000`. See the root README for test and build commands.
+For Python, install uv, run `uv sync --locked --extra dev` in `services/analysis`, then start `uv run --locked uvicorn analysis_api.main:app --reload --port 8100`. See the root README for test and build commands.
 
 ## Style and Naming
 
@@ -16,7 +16,7 @@ Use PSR-12 PHP formatting; run `vendor/bin/pint --test` in `apps/web`. Name PHP 
 
 ## Tests and Contracts
 
-Add Laravel feature tests under `apps/web/tests/Feature` and unit tests under `apps/web/tests/Unit`; run `composer test` (or `vendor/bin/phpunit`). Python tests live under `services/analysis/tests` and run with `python -m pytest`. Changes to request/response behavior must update `contracts/analysis-v1.openapi.yaml` and the matching tests. Do not claim a check passed unless it ran successfully.
+Add Laravel feature tests under `apps/web/tests/Feature`; run `composer test` (or `vendor/bin/phpunit`). Python tests live under `services/analysis/tests` and run with `uv run --locked pytest`. Changes to request/response behavior must update `contracts/analysis-v1.openapi.yaml` and the matching tests. Do not claim a check passed unless it ran successfully.
 
 ## Commits and Pull Requests
 

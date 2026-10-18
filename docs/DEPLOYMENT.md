@@ -10,7 +10,7 @@ Build commands from the web root:
 
 ```sh
 composer install --no-dev --optimize-autoloader
-npm install
+npm ci
 npm run build
 ```
 
