@@ -15,8 +15,16 @@ final class ResearchDescriptionForm extends Component
 
     public bool $previewSubmitted = false;
 
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['projectTitle', 'researchQuestion'], true)) {
+            $this->previewSubmitted = false;
+        }
+    }
+
     public function submit(): void
     {
+        $this->previewSubmitted = false;
         $this->validate();
         $this->previewSubmitted = true;
     }
