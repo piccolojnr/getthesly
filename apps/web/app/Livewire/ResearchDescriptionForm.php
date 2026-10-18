@@ -201,7 +201,7 @@ final class ResearchDescriptionForm extends Component
         $publicId = session()->get('research_draft_public_id');
         $token = session()->get('research_draft_access_token');
 
-        if (!is_string($publicId) || !is_string($token)) {
+        if (is_string($publicId) === false || is_string($token) === false) {
             return null;
         }
 
