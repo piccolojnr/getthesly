@@ -48,9 +48,12 @@ final class ResearchDescriptionForm extends Component
 
     public function understand(ResearchInterpreter $interpreter): void
     {
-        $this->validate();
+        $validated = $this->validate();
+        $title = $validated['projectTitle'];
+        $question = $validated['researchQuestion'];
 
         $draft = $this->draftForCurrentSession() ?? $this->createDraft();
+        $expectedRevision = (int) $draft->current_revision;
         $rateLimitKeys = [
             'research-understanding:ip:'.hash('sha256', (string) request()->ip()),
             'research-understanding:session:'.hash('sha256', session()->getId()),
@@ -67,43 +70,74 @@ final class ResearchDescriptionForm extends Component
             RateLimiter::hit($rateLimitKey, (int) config('research.rate_limit_decay_seconds', 600));
         }
         $this->errorMessage = null;
-        $this->appendRevision($draft, 'draft');
+        $input = ['project_title' => $title, 'research_question' => $question];
+        $pending = $this->appendIfCurrent($draft, $expectedRevision, 'draft', input: $input);
+
+        if ($pending === null) {
+            $this->errorMessage = 'Your research description changed. Please review it and try again.';
+
+            return;
+        }
 
         try {
-            $interpretation = $interpreter->interpret($this->projectTitle, $this->researchQuestion);
-            $this->appendRevision($draft, 'interpreted', $interpretation);
+            $interpretation = $interpreter->interpret($title, $question);
+            if ($this->appendIfCurrent($draft, $pending->revision, 'interpreted', $interpretation, $input) === null) {
+                $this->errorMessage = 'Your research description changed while we were working. Please try again.';
+
+                return;
+            }
             $this->editing = false;
         } catch (Throwable) {
-            $this->appendRevision($draft, 'failed');
-            $this->errorMessage = 'We could not understand your description just now. Your draft is saved; please try again.';
+            if ($this->appendIfCurrent($draft, $pending->revision, 'failed', input: $input) !== null) {
+                $this->errorMessage = 'We could not understand your description just now. Your draft is saved; please try again.';
+            } else {
+                $this->errorMessage = 'Your research description changed while we were working. Please try again.';
+            }
         }
     }
 
     public function confirm(): void
     {
         $draft = $this->draftForCurrentSession();
-        $revision = $draft?->currentRevision;
+        $result = $draft === null ? 'unavailable' : DB::transaction(function () use ($draft): string {
+            $locked = ResearchDraft::query()->lockForUpdate()->find($draft->getKey());
+            $revision = $locked?->currentRevision;
 
-        if ($draft === null || $revision === null || $revision->status !== 'interpreted' || $revision->interpretation === null) {
-            $this->errorMessage = 'Please review a current interpretation before confirming it.';
+            if ($revision === null || $revision->status !== 'interpreted' || $revision->interpretation === null) {
+                return 'unavailable';
+            }
+            if ($revision->interpretation['clarification'] !== null) {
+                return 'clarification';
+            }
+            if ($revision->project_title !== $this->projectTitle || $revision->research_question !== $this->researchQuestion) {
+                return 'changed';
+            }
+
+            $revisionNumber = $locked->current_revision + 1;
+            $locked->revisions()->create([
+                'revision' => $revisionNumber,
+                'project_title' => $revision->project_title,
+                'research_question' => $revision->research_question,
+                'interpretation' => $revision->interpretation,
+                'status' => 'confirmed',
+                'confirmed_at' => now(),
+            ]);
+            $locked->forceFill(['current_revision' => $revisionNumber])->save();
+
+            return 'confirmed';
+        });
+
+        if ($result !== 'confirmed') {
+            $this->errorMessage = match ($result) {
+                'clarification' => 'Please edit your description to clarify this question before confirming.',
+                'changed' => 'Your description changed. Please ask us to understand it again before confirming.',
+                default => 'Please review a current interpretation before confirming it.',
+            };
+            $this->editing = $result === 'changed';
 
             return;
         }
 
-        if ($revision->interpretation['clarification'] !== null) {
-            $this->errorMessage = 'Please edit your description to clarify this question before confirming.';
-
-            return;
-        }
-
-        if ($revision->project_title !== $this->projectTitle || $revision->research_question !== $this->researchQuestion) {
-            $this->editing = true;
-            $this->errorMessage = 'Your description changed. Please ask us to understand it again before confirming.';
-
-            return;
-        }
-
-        $this->appendRevision($draft, 'confirmed', ResearchInterpretation::fromArray($revision->interpretation));
         $this->editing = false;
         $this->errorMessage = null;
     }
@@ -212,6 +246,39 @@ final class ResearchDescriptionForm extends Component
         });
     }
 
+    private function appendIfCurrent(
+        ResearchDraft $draft,
+        int $expectedRevision,
+        string $status,
+        ?ResearchInterpretation $interpretation = null,
+        ?array $input = null,
+    ): ?ResearchDraftRevision {
+        return DB::transaction(function () use ($draft, $expectedRevision, $status, $interpretation, $input): ?ResearchDraftRevision {
+            $locked = ResearchDraft::query()->lockForUpdate()->findOrFail($draft->getKey());
+            if ((int) $locked->current_revision !== $expectedRevision) {
+                return null;
+            }
+            $current = $locked->currentRevision;
+            if ($current !== null && $input !== null
+                && ($current->project_title !== $input['project_title'] || $current->research_question !== $input['research_question'])) {
+                return null;
+            }
+
+            $revisionNumber = $expectedRevision + 1;
+            $revision = $locked->revisions()->create([
+                'revision' => $revisionNumber,
+                'project_title' => $input['project_title'] ?? $this->projectTitle,
+                'research_question' => $input['research_question'] ?? $this->researchQuestion,
+                'interpretation' => $interpretation?->toArray(),
+                'status' => $status,
+                'confirmed_at' => $status === 'confirmed' ? now() : null,
+            ]);
+            $locked->forceFill(['current_revision' => $revisionNumber])->save();
+
+            return $revision;
+        });
+    }
+
     public function render()
     {
         $revision = $this->currentRevision();
@@ -229,3 +296,4 @@ final class ResearchDescriptionForm extends Component
         ]);
     }
 }
+

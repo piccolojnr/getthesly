@@ -34,6 +34,21 @@ final class ResearchUnderstandingTest extends TestCase
             ->set('researchQuestion', 'How is social media use related to students’ academic performance?');
     }
 
+    private function appendConcurrentRevision(ResearchDraft $draft, string $status, string $title, string $question): void
+    {
+        $draft->refresh();
+        $revision = $draft->current_revision + 1;
+        $draft->revisions()->create([
+            'revision' => $revision,
+            'project_title' => $title,
+            'research_question' => $question,
+            'interpretation' => $status === 'confirmed' ? $this->validInterpretation() : null,
+            'status' => $status,
+            'confirmed_at' => $status === 'confirmed' ? now() : null,
+        ]);
+        $draft->forceFill(['current_revision' => $revision])->save();
+    }
+
     public function test_valid_input_is_interpreted_and_saved_as_a_private_draft(): void
     {
         UnderstandResearch::fake([$this->validInterpretation()])->preventStrayPrompts();
@@ -127,6 +142,61 @@ final class ResearchUnderstandingTest extends TestCase
             ->assertDontSee('provider request timed out');
     }
 
+    public function test_delayed_interpretation_cannot_replace_a_revision_created_by_an_edit(): void
+    {
+        $interpreter = $this->mock(ResearchInterpreter::class);
+        $interpreter->shouldReceive('interpret')->once()->andReturnUsing(function () {
+            $draft = ResearchDraft::query()->firstOrFail();
+            $this->appendConcurrentRevision($draft, 'draft', 'A changed study', 'How does sleep duration relate to university grades?');
+
+            return ResearchInterpretation::fromArray($this->validInterpretation());
+        });
+
+        $this->startForm()->call('understand')->assertSee('description changed while we were working');
+
+        $draft = ResearchDraft::query()->firstOrFail();
+        $this->assertSame('draft', $draft->currentRevision->status);
+        $this->assertSame('A changed study', $draft->currentRevision->project_title);
+        $this->assertSame(2, $draft->revisions()->count());
+    }
+
+    public function test_delayed_interpretation_cannot_replace_a_newer_retry(): void
+    {
+        $interpreter = $this->mock(ResearchInterpreter::class);
+        $interpreter->shouldReceive('interpret')->once()->andReturnUsing(function () {
+            $draft = ResearchDraft::query()->firstOrFail();
+            $this->appendConcurrentRevision($draft, 'draft', 'Social media and academic performance', 'How is social media use related to students’ academic performance?');
+
+            return ResearchInterpretation::fromArray($this->validInterpretation());
+        });
+
+        $this->startForm()->call('understand')->assertSee('description changed while we were working');
+
+        $draft = ResearchDraft::query()->firstOrFail();
+        $this->assertSame('draft', $draft->currentRevision->status);
+        $this->assertSame(2, $draft->revisions()->count());
+    }
+
+    public function test_delayed_interpretation_cannot_replace_a_confirmed_newer_revision(): void
+    {
+        $interpreter = $this->mock(ResearchInterpreter::class);
+        $interpreter->shouldReceive('interpret')->once()->andReturnUsing(function () {
+            $draft = ResearchDraft::query()->firstOrFail();
+            $title = 'Social media and academic performance';
+            $question = 'How is social media use related to students’ academic performance?';
+            $this->appendConcurrentRevision($draft, 'interpreted', $title, $question);
+            $this->appendConcurrentRevision($draft, 'confirmed', $title, $question);
+
+            return ResearchInterpretation::fromArray($this->validInterpretation());
+        });
+
+        $this->startForm()->call('understand')->assertSee('description changed while we were working');
+
+        $draft = ResearchDraft::query()->firstOrFail();
+        $this->assertSame('confirmed', $draft->currentRevision->status);
+        $this->assertSame(3, $draft->revisions()->count());
+    }
+
     public function test_editing_after_interpretation_invalidates_it_and_preserves_the_previous_revision(): void
     {
         UnderstandResearch::fake([$this->validInterpretation()]);
@@ -180,6 +250,17 @@ final class ResearchUnderstandingTest extends TestCase
         Livewire::test(ResearchDescriptionForm::class)
             ->assertSet('projectTitle', 'Social media and academic performance')
             ->assertSee('Your research brief is ready.');
+    }
+
+    public function test_repeated_confirmation_does_not_append_duplicate_confirmed_revisions(): void
+    {
+        UnderstandResearch::fake([$this->validInterpretation()]);
+        $component = $this->startForm()->call('understand')->call('confirm')->call('confirm');
+
+        $draft = ResearchDraft::query()->firstOrFail();
+        $this->assertSame('confirmed', $draft->currentRevision->status);
+        $this->assertSame(1, $draft->revisions()->where('status', 'confirmed')->count());
+        $component->assertSee('Please review a current interpretation before confirming it.');
     }
 
     public function test_stale_interpretation_cannot_be_confirmed_after_editing(): void
@@ -292,3 +373,4 @@ final class ResearchUnderstandingTest extends TestCase
         $this->assertDatabaseCount('research_draft_revisions', 0);
     }
 }
+
