@@ -17,7 +17,7 @@ final readonly class AnalysisSummary
 
     public static function fromPayload(mixed $payload): self
     {
-        if (! is_array($payload)
+        if (!is_array($payload)
             || array_diff(array_keys($payload), ['contract_version', 'dataset_id', 'summary']) !== []
             || array_diff(['contract_version', 'dataset_id', 'summary'], array_keys($payload)) !== []
             || ($payload['contract_version'] ?? null) !== '1.0'
@@ -30,12 +30,12 @@ final readonly class AnalysisSummary
         if (! is_array($summary)
             || array_diff(array_keys($summary), ['sample_size', 'mean', 'median', 'sample_standard_deviation']) !== []
             || array_diff(['sample_size', 'mean', 'median', 'sample_standard_deviation'], array_keys($summary)) !== []
-            || ! is_string($payload['dataset_id'] ?? null)
-            || ! is_int($summary['sample_size'] ?? null)
+            || !is_string($payload['dataset_id'] ?? null)
+            || !is_int($summary['sample_size'] ?? null)
             || $summary['sample_size'] < 2
-            || ! self::isFiniteNumber($summary['mean'] ?? null)
-            || ! self::isFiniteNumber($summary['median'] ?? null)
-            || ! self::isFiniteNumber($summary['sample_standard_deviation'] ?? null)
+            || !self::isFiniteNumber($summary['mean'] ?? null)
+            || !self::isFiniteNumber($summary['median'] ?? null)
+            || !self::isFiniteNumber($summary['sample_standard_deviation'] ?? null)
             || $summary['sample_standard_deviation'] < 0) {
             throw new InvalidArgumentException('Invalid analysis service response.');
         }

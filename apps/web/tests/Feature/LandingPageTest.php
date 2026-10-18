@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\ResearchDescriptionForm;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -18,14 +19,14 @@ final class LandingPageTest extends TestCase
 
     public function test_form_requires_a_research_title_and_question(): void
     {
-        Livewire::test(\App\Livewire\ResearchDescriptionForm::class)
+        Livewire::test(ResearchDescriptionForm::class)
             ->call('submit')
             ->assertHasErrors(['projectTitle' => 'required', 'researchQuestion' => 'required']);
     }
 
     public function test_valid_submission_shows_preview_message_without_saving_data(): void
     {
-        Livewire::test(\App\Livewire\ResearchDescriptionForm::class)
+        Livewire::test(ResearchDescriptionForm::class)
             ->set('projectTitle', 'Study habits and wellbeing')
             ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
             ->call('submit')

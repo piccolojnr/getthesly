@@ -4,6 +4,4 @@ namespace App\Services\Analysis;
 
 use RuntimeException;
 
-final class AnalysisServiceException extends RuntimeException
-{
-}
+final class AnalysisServiceException extends RuntimeException {}
