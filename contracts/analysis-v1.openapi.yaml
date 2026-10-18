@@ -1,0 +1,105 @@
+openapi: 3.1.0
+info:
+  title: getthesly Analysis Service
+  version: 1.0.0
+  description: Private service contract for a deterministic synthetic summary check.
+servers:
+  - url: https://analysis.internal
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/health:
+    get:
+      security: []
+      summary: Process health check
+      responses:
+        '200':
+          description: Service is available
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status, service]
+                properties:
+                  status: { type: string, const: ok }
+                  service: { type: string, const: analysis }
+  /api/v1/analyze/synthetic-summary:
+    post:
+      summary: Summarize the fixed synthetic student wellbeing sample
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [dataset_id]
+              properties:
+                dataset_id: { type: string, const: student-wellbeing-v1 }
+      responses:
+        '200':
+          description: Deterministic synthetic summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyntheticSummary'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/InvalidRequest' }
+        '503': { $ref: '#/components/responses/NotConfigured' }
+        '500': { $ref: '#/components/responses/InternalError' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    SyntheticSummary:
+      type: object
+      additionalProperties: false
+      required: [contract_version, dataset_id, summary]
+      properties:
+        contract_version: { type: string, const: '1.0' }
+        dataset_id: { type: string, const: student-wellbeing-v1 }
+        summary:
+          type: object
+          additionalProperties: false
+          required: [sample_size, mean, median, sample_standard_deviation]
+          properties:
+            sample_size: { type: integer, minimum: 2 }
+            mean: { type: number }
+            median: { type: number }
+            sample_standard_deviation: { type: number, minimum: 0 }
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+  responses:
+    Unauthorized:
+      description: Missing or invalid service token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InvalidRequest:
+      description: Request does not match the versioned contract
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotConfigured:
+      description: Service authentication is not configured
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InternalError:
+      description: Unexpected internal service failure
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

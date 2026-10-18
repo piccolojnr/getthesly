@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  laravel:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Prepare application key
+        run: cp .env.example .env && php artisan key:generate
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Build frontend assets
+        run: npm run build
+      - name: Start Laravel and verify the research screen
+        run: |
+          php artisan serve --host 127.0.0.1 --port 8000 > /tmp/getthesly-laravel.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:8000/ | grep --fixed-strings --quiet 'What are you studying?'
+      - name: Run Laravel tests
+        run: vendor/bin/phpunit
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
+
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/analysis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: services/analysis/pyproject.toml
+      - name: Install uv and locked service dependencies
+        run: |
+          python -m pip install uv==0.13.0
+          uv sync --locked --extra dev
+      - name: Check Python lint
+        run: uv run --locked ruff check .
+      - name: Check Python formatting
+        run: uv run --locked ruff format --check .
+      - name: Run Python tests
+        run: uv run --locked pytest
+
+  service-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite
+          coverage: none
+      - name: Install uv and locked analysis service
+        working-directory: services/analysis
+        run: |
+          python -m pip install uv==0.13.0
+          uv sync --locked
+      - name: Start protected analysis service
+        working-directory: services/analysis
+        env:
+          ANALYSIS_SERVICE_TOKEN: local-ci-shared-token
+        run: |
+          uv run --locked uvicorn analysis_api.main:app --host 127.0.0.1 --port 8000 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:8000/api/v1/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Analysis service did not become healthy"
+          exit 1
+      - name: Install Laravel dependencies
+        working-directory: apps/web
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Prepare Laravel environment
+        working-directory: apps/web
+        run: cp .env.example .env && php artisan key:generate
+      - name: Verify Laravel-to-Python contract
+        working-directory: apps/web
+        env:
+          ANALYSIS_SERVICE_URL: http://127.0.0.1:8000
+          ANALYSIS_SERVICE_TOKEN: local-ci-shared-token
+        run: vendor/bin/phpunit tests/Contract/AnalysisServiceLiveContractTest.php
