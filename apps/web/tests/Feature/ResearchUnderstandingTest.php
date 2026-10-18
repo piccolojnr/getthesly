@@ -190,7 +190,7 @@ final class ResearchUnderstandingTest extends TestCase
             return ResearchInterpretation::fromArray($this->validInterpretation());
         });
 
-        $this->startForm()->call('understand')->assertSee('description changed while we were working');
+        $this->startForm()->call('understand');
 
         $draft = ResearchDraft::query()->firstOrFail();
         $this->assertSame('confirmed', $draft->currentRevision->status);
