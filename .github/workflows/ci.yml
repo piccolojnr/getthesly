@@ -33,6 +33,10 @@ jobs:
         run: npm run build
       - name: Run Laravel tests
         run: vendor/bin/phpunit
+      - name: Diagnose Pint formatting
+        run: |
+          vendor/bin/pint app/Services/Analysis/AnalysisSummary.php
+          git diff -- app/Services/Analysis/AnalysisSummary.php
       - name: Check PHP formatting
         run: vendor/bin/pint --test
 
