@@ -34,6 +34,41 @@ final class LandingPageTest extends TestCase
             ->assertSet('previewSubmitted', true);
     }
 
+    public function test_editing_the_project_title_clears_the_previous_success_state(): void
+    {
+        Livewire::test(ResearchDescriptionForm::class)
+            ->set('projectTitle', 'Study habits and wellbeing')
+            ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
+            ->call('submit')
+            ->assertSet('previewSubmitted', true)
+            ->set('projectTitle', 'A revised title')
+            ->assertSet('previewSubmitted', false);
+    }
+
+    public function test_editing_the_research_question_clears_the_previous_success_state(): void
+    {
+        Livewire::test(ResearchDescriptionForm::class)
+            ->set('projectTitle', 'Study habits and wellbeing')
+            ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
+            ->call('submit')
+            ->assertSet('previewSubmitted', true)
+            ->set('researchQuestion', 'How does sleep relate to student wellbeing?')
+            ->assertSet('previewSubmitted', false);
+    }
+
+    public function test_invalid_resubmission_clears_the_previous_success_state(): void
+    {
+        Livewire::test(ResearchDescriptionForm::class)
+            ->set('projectTitle', 'Study habits and wellbeing')
+            ->set('researchQuestion', 'How do study habits relate to student wellbeing?')
+            ->call('submit')
+            ->assertSet('previewSubmitted', true)
+            ->set('researchQuestion', 'Too short')
+            ->call('submit')
+            ->assertHasErrors(['researchQuestion' => 'min'])
+            ->assertSet('previewSubmitted', false);
+    }
+
     public function test_application_health_endpoint_is_available(): void
     {
         $this->get('/health')->assertOk()->assertExactJson(['status' => 'ok']);
