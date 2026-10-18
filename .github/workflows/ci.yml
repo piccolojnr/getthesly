@@ -31,6 +31,16 @@ jobs:
         run: npm ci
       - name: Build frontend assets
         run: npm run build
+      - name: Start Laravel and verify the research screen
+        run: |
+          php artisan serve --host 127.0.0.1 --port 8000 > /tmp/getthesly-laravel.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:8000/ | grep --fixed-strings --quiet 'What are you studying?'
       - name: Run Laravel tests
         run: vendor/bin/phpunit
       - name: Check PHP formatting
