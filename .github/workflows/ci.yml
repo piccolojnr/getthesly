@@ -8,6 +8,48 @@ permissions:
   contents: read
 
 jobs:
+  lockfiles:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/milestone-1-foundation'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve Composer dependencies
+        working-directory: apps/web
+        run: composer update --no-install --no-interaction --prefer-dist --no-progress
+      - name: Resolve npm dependencies
+        working-directory: apps/web
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Resolve Python dependencies
+        working-directory: services/analysis
+        run: |
+          python -m pip install uv
+          uv lock
+      - name: Export resolved lockfiles
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+
+          for filename in (
+              'apps/web/composer.lock',
+              'apps/web/package-lock.json',
+              'services/analysis/uv.lock',
+          ):
+              encoded = base64.b64encode(Path(filename).read_bytes()).decode('ascii')
+              for index, start in enumerate(range(0, len(encoded), 12000)):
+                  print(f'LOCK_B64|{filename}|{index}|{encoded[start:start + 12000]}')
+          PY
+
   laravel:
     runs-on: ubuntu-latest
     defaults:
