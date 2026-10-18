@@ -131,6 +131,20 @@ h1 em { color: var(--moss); font-weight: 400; }
 .primary-button:disabled { opacity: .65; cursor: wait; }
 .form-footnote { max-width: 130px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; text-align: right; }
 .preview-notice { margin: 20px 0 0; padding: 12px 14px; border-left: 2px solid var(--rust); color: #5d514a; background: rgba(166, 91, 63, .07); font-size: 12px; line-height: 1.55; }
+.research-review, .research-ready { margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--line); }
+.research-review h2, .research-ready h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: clamp(34px, 5vw, 44px); line-height: 1.08; letter-spacing: -.04em; }
+.review-summary { margin: 20px 0 28px; color: #454c43; font-family: Georgia, "Times New Roman", serif; font-size: 20px; line-height: 1.5; }
+.review-detail { margin-top: 22px; }
+.review-detail h3 { margin: 0 0 7px; color: var(--moss); font-size: 11px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+.review-detail p, .research-ready > p:not(.eyebrow) { margin: 0; color: #555d53; font-size: 14px; line-height: 1.65; }
+.concept-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.concept-list li { padding: 6px 9px; border: 1px solid var(--line); color: #555d53; font-size: 12px; }
+.clarification-note { margin: 24px 0 0; color: #5d514a; font-size: 13px; line-height: 1.6; }
+.review-boundary { margin: 26px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.review-actions { justify-content: flex-start; flex-wrap: wrap; }
+.text-button { min-height: 44px; padding: 0 8px; border: 0; color: var(--moss-dark); background: transparent; font-size: 12px; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.text-button:hover { color: var(--ink); }
+.research-ready > p:not(.eyebrow) { margin-top: 18px; }
 .privacy-note { margin: 36px 0 0; color: var(--muted); font-family: Georgia, serif; font-size: 13px; font-style: italic; text-align: center; }
 .privacy-note span { margin-right: 7px; color: var(--rust); font-style: normal; font-size: 11px; }
 
@@ -150,6 +164,11 @@ h1 em { color: var(--moss); font-weight: 400; }
     .form-action { align-items: flex-start; flex-direction: column; }
     .primary-button { width: 100%; }
     .form-footnote { max-width: none; text-align: left; }
+    .research-review, .research-ready { margin-top: 32px; padding-top: 24px; }
+    .review-summary { font-size: 18px; }
+    .review-actions { align-items: stretch; }
+    .review-actions .primary-button { width: 100%; }
+    .text-button { align-self: center; }
     .site-footer { gap: 16px; min-height: 60px; font-size: 9px; }
     .site-footer span:last-child { text-align: right; }
 }

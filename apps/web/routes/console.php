@@ -1,3 +1,5 @@
 <?php
 
-// Register scheduled tasks and project-specific commands here as the product grows.
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('research:drafts:prune')->daily()->withoutOverlapping();

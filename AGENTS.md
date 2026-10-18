@@ -24,4 +24,4 @@ Use short imperative commit subjects (for example, `Add protected analysis healt
 
 ## Agent Instructions
 
-Read `docs/ARCHITECTURE.md`, `docs/FRONTEND_DESIGN.md`, and `docs/MVP_SCOPE.md` before changing system boundaries or the landing screen. Preserve the milestone scope: no upload, research-AI, full-analysis, Chapter Four, account, or billing features without a new request.
+Read `docs/ARCHITECTURE.md`, `docs/FRONTEND_DESIGN.md`, and `docs/MVP_SCOPE.md` before changing system boundaries or the research flow. Preserve the current scope: no dataset uploads, statistical analysis, Chapter Four, accounts, or billing without a new request.
