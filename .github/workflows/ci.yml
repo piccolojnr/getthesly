@@ -27,14 +27,14 @@ jobs:
         run: composer update --no-interaction --prefer-dist --no-progress
       - name: Prepare application key
         run: cp .env.example .env && php artisan key:generate
-      - name: Run Laravel tests
-        run: vendor/bin/phpunit
-      - name: Check PHP formatting
-        run: vendor/bin/pint --test
       - name: Install frontend dependencies
         run: npm install
       - name: Build frontend assets
         run: npm run build
+      - name: Run Laravel tests
+        run: vendor/bin/phpunit
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
 
   python:
     runs-on: ubuntu-latest
